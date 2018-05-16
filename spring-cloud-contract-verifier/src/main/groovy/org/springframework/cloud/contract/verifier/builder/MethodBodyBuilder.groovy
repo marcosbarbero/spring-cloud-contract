@@ -17,6 +17,7 @@
 package org.springframework.cloud.contract.verifier.builder
 
 import org.springframework.cloud.contract.spec.internal.Cookie
+import org.springframework.cloud.contract.verifier.util.XmlToXmlPathsConverter
 
 import java.util.regex.Pattern
 
@@ -353,6 +354,7 @@ abstract class MethodBodyBuilder {
 		} else if (contentType == ContentType.XML) {
 			bb.addLine(getParsedXmlResponseBodyString(getResponseAsString()))
 			addColonIfRequired(bb)
+			addXmlResponseBodyCheck(bb, convertedResponseBody, bodyMatchers)
 			// TODO xml validation
 		} else {
 			simpleTextResponseBodyCheck(bb, convertedResponseBody)
@@ -364,7 +366,12 @@ abstract class MethodBodyBuilder {
 		processText(bb, "", convertedResponseBody)
 		addColonIfRequired(bb)
 	}
-	
+
+	private void addXmlResponseBodyCheck(BlockBuilder bb, convertedResponseBody, BodyMatchers bodyMatchers) {
+		// convert the responsebody and do the necessary checks to xml conversion
+		// if a request body is present also parse it to XML.
+	}
+
 	private void addJsonResponseBodyCheck(BlockBuilder bb, convertedResponseBody, BodyMatchers bodyMatchers) {
 		appendJsonPath(bb, getResponseAsString())
 		Object copiedBody = cloneBody(convertedResponseBody)
@@ -375,6 +382,8 @@ abstract class MethodBodyBuilder {
 		convertedResponseBody = MapConverter.transformValues(convertedResponseBody, returnReferencedEntries(templateModel))
 		JsonPaths jsonPaths = new JsonToJsonPathsConverter(configProperties).transformToJsonPathWithTestsSideValues(convertedResponseBody)
 		DocumentContext parsedRequestBody
+
+		// is it also verifying the request body?
 		if (contract.request?.body) {
 			def requestBody = MapConverter.getTestSideValues(contract.request.body)
 			parsedRequestBody = JsonPath.parse(requestBody)
